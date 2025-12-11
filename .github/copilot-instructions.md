@@ -91,7 +91,7 @@ The system operates in three states:
 ### Key Components
 - **BLE Provisioning** (`ble_provisioning.cpp`): NimBLE-based credential exchange
 - **SenseAI** (`sense_ai.cpp`): Motion detection + AI inference placeholder
-- **Twilio Integration**: HTTP POST with base64-encoded JPEG on motion events
+- **Alert System**: HTTP POST with JSON payload containing base64-encoded JPEG
 - **Camera Config** (`config.h`): XIAO ESP32-S3 Sense pin mappings
 
 ## Common Tasks for This Project
@@ -111,13 +111,22 @@ Device advertises as `SenseAI_Camera` with service UUID `4fafc201-1fb5-459e-8fcc
 - Triggers alert if >5% of pixels change by >30 intensity units
 - AI inference confidence threshold: 0.7
 
-### Twilio Configuration
-Set credentials in `config.h` or implement BLE characteristic for runtime config:
+### Alert Configuration
+Set HTTP endpoint in `config.h`:
 ```cpp
-#define TWILIO_ACCOUNT_SID "ACxxxxx"
-#define TWILIO_AUTH_TOKEN "your_token"
-#define TWILIO_FROM_NUMBER "+1234567890"
-#define TWILIO_TO_NUMBER "+0987654321"
+#define ALERT_ENDPOINT "https://your-server.com/api/alerts"
+#define ALERT_AUTH_TOKEN "your_api_key"  // Optional
+```
+
+Alert payload format (JSON):
+```json
+{
+  "timestamp": 123456,
+  "device": "SenseAI_Camera",
+  "event": "motion_detected",
+  "confidence": 0.85,
+  "image": "data:image/jpeg;base64,..."
+}
 ```
 - Check Seeed documentation for specific camera pins
 

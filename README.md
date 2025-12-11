@@ -8,7 +8,7 @@ ESP32-S3 based intelligent security camera with motion detection, AI inference, 
 - 📷 **Camera Integration**: OV2640 camera on Seeed XIAO ESP32-S3 Sense
 - 🧠 **Motion Detection**: Pixel-difference based motion sensing
 - 🤖 **AI-Ready**: Placeholder for TensorFlow Lite integration
-- 📱 **Twilio Alerts**: MMS notifications with captured images
+- 📡 **HTTP Alerts**: POST notifications with base64-encoded images
 - 💾 **Persistent Storage**: WiFi credentials saved across reboots
 
 ## Hardware Requirements
@@ -35,15 +35,13 @@ pip install platformio
 cd SecurityCameraTwilio
 ```
 
-### 2. Configure Twilio
+### 2. Configure Alert Endpoint
 
-Edit `include/config.h` and add your Twilio credentials:
+Edit `include/config.h` and add your HTTP endpoint:
 
 ```cpp
-#define TWILIO_ACCOUNT_SID "ACxxxxxxxxxxxxx"
-#define TWILIO_AUTH_TOKEN "your_auth_token"
-#define TWILIO_FROM_NUMBER "+1234567890"
-#define TWILIO_TO_NUMBER "+0987654321"
+#define ALERT_ENDPOINT "https://your-server.com/api/alerts"
+#define ALERT_AUTH_TOKEN "your_api_key"  // Optional
 ```
 
 ### 3. Build & Upload
@@ -122,11 +120,11 @@ platformio.ini              # Build config & dependencies
 1. Capture frame from camera (320x240 JPEG)
 2. Compare with previous frame pixel-by-pixel
 3. Calculate percentage of changed pixels
+2. Compare with previous frame pixel-by-pixel
+3. Calculate percentage of changed pixels
 4. If >5% change → Motion detected
 5. Run AI inference (placeholder)
-6. If confidence >0.7 → Send Twilio alert with image
-
-## Configuration
+6. If confidence >0.7 → Send HTTP POST alert with image
 
 ### Camera Settings (`sense_ai.cpp`)
 
@@ -195,15 +193,16 @@ BLE advertising started
 
 ### Twilio Alert Failed
 
+### Alert Send Failed
+
 ```
 Failed to send alert. Error: -1
 ```
-- Verify Twilio credentials in `config.h`
+- Verify `ALERT_ENDPOINT` is configured in `config.h`
 - Check WiFi is connected
-- Ensure phone number format: `+[country code][number]`
-- Note: Image base64 encoding may exceed Twilio limits for large images
-
-## Development Tips
+- Ensure endpoint URL is accessible (test with curl)
+- Check server logs for authentication/validation errors
+- Note: Large base64 images may timeout or exceed payload limits
 
 ### Serial Debugging
 
@@ -242,12 +241,42 @@ pio run --target size
 MIT
 
 ## Resources
+## Alert Payload Example
+
+When motion is detected, the device sends:
+
+```json
+{
+  "timestamp": 123456789,
+  "device": "SenseAI_Camera",
+  "event": "motion_detected",
+  "confidence": 0.85,
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA..."
+}
+```
+
+### Sample Server Endpoint (Node.js)
+
+```javascript
+app.post('/api/alerts', (req, res) => {
+  const { timestamp, device, event, confidence, image } = req.body;
+  
+  // Decode base64 image
+  const base64Data = image.replace(/^data:image\/jpeg;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
+  
+  // Save or process image
+  fs.writeFileSync(`alert_${timestamp}.jpg`, buffer);
+  
+  res.json({ success: true });
+});
+```
+
+## Resources
 
 - [Seeed XIAO ESP32-S3 Wiki](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
 - [ESP32 Camera Examples](https://github.com/espressif/esp32-camera)
-- [Twilio API Docs](https://www.twilio.com/docs/sms/api)
 - [PlatformIO Documentation](https://docs.platformio.org)
-
 ## Contributing
 
 Pull requests welcome! Areas for improvement:

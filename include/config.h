@@ -32,10 +32,8 @@
 #define MOTION_THRESHOLD 30         // Pixel difference threshold
 #define CONFIDENCE_THRESHOLD 0.7    // AI confidence threshold
 
-// Twilio Configuration (set via BLE provisioning or hardcode)
-#define TWILIO_ACCOUNT_SID ""
-#define TWILIO_AUTH_TOKEN ""
-#define TWILIO_FROM_NUMBER ""
-#define TWILIO_TO_NUMBER ""
+// Alert Configuration
+#define ALERT_ENDPOINT ""  // Set your HTTP POST endpoint URL
+#define ALERT_AUTH_TOKEN ""  // Optional: Bearer token or API key
 
 #endif

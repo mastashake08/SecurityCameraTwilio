@@ -154,6 +154,12 @@ void SenseAI::sendAlert() {
         return;
     }
     
+    String endpoint = String(ALERT_ENDPOINT);
+    if (endpoint.isEmpty()) {
+        Serial.println("Alert endpoint not configured");
+        return;
+    }
+    
     // Get current frame for alert
     camera_fb_t* fb = esp_camera_fb_get();
     if (!fb) {
@@ -162,24 +168,33 @@ void SenseAI::sendAlert() {
     }
     
     HTTPClient http;
-    String url = "https://api.twilio.com/2010-04-01/Accounts/" + String(TWILIO_ACCOUNT_SID) + "/Messages.json";
+    http.begin(endpoint);
+    http.addHeader("Content-Type", "application/json");
     
-    http.begin(url);
-    http.setAuthorization(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    // Add authentication if configured
+    String authToken = String(ALERT_AUTH_TOKEN);
+    if (!authToken.isEmpty()) {
+        http.addHeader("Authorization", "Bearer " + authToken);
+    }
     
     // Encode image to base64
     String imageBase64 = base64::encode(fb->buf, fb->len);
     
-    String postData = "From=" + String(TWILIO_FROM_NUMBER) +
-                     "&To=" + String(TWILIO_TO_NUMBER) +
-                     "&Body=🚨 Motion detected by SenseAI Security Camera!" +
-                     "&MediaUrl=data:image/jpeg;base64," + imageBase64;
+    // Create JSON payload
+    String payload = "{";
+    payload += "\"timestamp\":" + String(millis()) + ",";
+    payload += "\"device\":\"" + String(DEVICE_NAME) + "\",";
+    payload += "\"event\":\"motion_detected\",";
+    payload += "\"confidence\":0.85,";
+    payload += "\"image\":\"data:image/jpeg;base64," + imageBase64 + "\"";
+    payload += "}";
     
-    int httpResponseCode = http.POST(postData);
+    int httpResponseCode = http.POST(payload);
     
     if (httpResponseCode > 0) {
         Serial.printf("Alert sent successfully. Response: %d\n", httpResponseCode);
+        String response = http.getString();
+        Serial.printf("Server response: %s\n", response.c_str());
     } else {
         Serial.printf("Failed to send alert. Error: %s\n", http.errorToString(httpResponseCode).c_str());
     }
